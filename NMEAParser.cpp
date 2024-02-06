@@ -5,70 +5,109 @@
 #include <cstdio>
 #include <iostream>
 
-NMEAParser::NMEAParser() : _buffer_length(0) {
-    // Initialize internal buffer
-    memset(_buffer, 0, BUFFER_SIZE);
-}
+NMEAParser::NMEAParser()
+    : _buffer_length(0)
+{}
 
-NMEAParser::~NMEAParser() {
-    // Destructor
-}
+NMEAParser::~NMEAParser()
+{}
 
-int NMEAParser::parse(const char* buffer, int length) {
+int NMEAParser::parse(const char* buffer, int length)
+{
     // Append new data to the internal buffer
     if (_buffer_length + length < BUFFER_SIZE) {
         memcpy(_buffer + _buffer_length, buffer, length);
         _buffer_length += length;
     } else {
-        // Handle buffer overflow or implement a circular buffer if necessary
-        std::cout << "Handle buffer overflow or implement a circular buffer if necessary" << std::endl;
+        std::cout << "overflow" << std::endl;
+        // Handle buffer overflow here.
     }
 
     // Process the buffer and return the number of messages parsed
     return processBuffer();
 }
 
-int NMEAParser::processBuffer() {
+const char* findCharInArray(const char* start, char c, int length)
+{
+    for (int i = 0; i < length; i++) {
+        if (start[i] == c) {
+            return &start[i];
+        }
+    }
+    return nullptr;
+}
+
+int NMEAParser::processBuffer()
+{
     int messagesParsed = 0;
     int startPos = 0;
+    int bytes_remaining = _buffer_length;
 
-    // Discard any data before the first '$'
-    char* firstMessageStart = strchr(_buffer, '$');
-    if (firstMessageStart != nullptr) {
-        int discardLength = firstMessageStart - _buffer;
-        memmove(_buffer, _buffer + discardLength, _buffer_length - discardLength);
-        _buffer_length -= discardLength;
-    }
+    while (1) {
+        // Find the start ($) of an NMEA message, handling data with NULL values
+        const char* start = findCharInArray(_buffer + startPos, '$', bytes_remaining);
 
-    while (true) {
-        // Find the start ($) and end (*) of an NMEA message
-        char* start = strchr(_buffer + startPos, '$');
-        char* end = strchr(_buffer + startPos, '*');
-
-        if (!start || !end || end - start > _buffer_length - 3) {
-            std::cout << "Incomplete or no message: " << "_buffer_length:" << _buffer_length << std::endl;
-            break; // Incomplete or no message
+        if (bytes_remaining == 0) {
+            break;
         }
 
-        // Calculate message length
-        int messageLength = (end - start) + 3;
+        if (!start) {
+            std::cout << "missingstart: bytes_remaining:" << bytes_remaining << std::endl;
+            std::string msg(_buffer + startPos, bytes_remaining);
+            std::cout << "missing start: " << msg.c_str() << std::endl;
+            break;
+        }
 
-        // Verify and handle the message
+        // Find the end (*) of the NMEA message, starting from the found start position
+        const char* end = findCharInArray(start, '*', _buffer + _buffer_length - start);
+        if (!end) {
+            std::cout << "missing end" << std::endl;
+            break; // No end found from the start position, or message is likely incomplete
+        }
+
+        // Found start and end of message
+        int messageLength = end - start + 5; // * (1), crc (2), crlf (2)
+
+        // $GNGGA,,,,,,0,00,0.0,,M,,M,,*56
+        // auto strmsg = std::string(start, messageLength);
+        // std::cout << strmsg << std::endl;
+        // $ + data + * + checksum
+
+        // Check if the length from start to the end of message including checksum and CRLF is within the buffer
+        if (messageLength > bytes_remaining) {
+            std::cout << "incomplete message" << std::endl;
+            break; // Incomplete message
+        }
+
         if (verifyChecksum(start, messageLength)) {
             messagesParsed++;
-            std::string msg(start + 3, 3);
-            std::cout << "handling message :) -- size:" << messageLength << " -- " << msg.c_str() << std::endl;
-            // TODO: Handle the parsed message
+
+            // TODO: handle_message()
+
+            // Update startPos for the next message, including CRLF
+            startPos = (start - _buffer) + messageLength; // +3 for '*CS',, +2 for CRLF
+
+        } else {
+            std::cout << "Invalid checksum" << std::endl;
+            // If checksum is invalid or message incomplete, move startPos just after this '$'
+            startPos = (start - _buffer) + 1;
         }
 
-        // Move to the next potential message start
-        startPos = (end - _buffer) + 3;
+        bytes_remaining = _buffer_length - startPos;
     }
 
     // Shift remaining data to the beginning of the buffer
     if (startPos < _buffer_length) {
-        memmove(_buffer, _buffer + startPos, _buffer_length - startPos);
+        memmove(_buffer, _buffer + startPos, bytes_remaining);
         _buffer_length -= startPos;
+
+        std::cout << "bytes_remaining:" << bytes_remaining << std::endl;
+
+        for (size_t i = 0; i < _buffer_length; i++) {
+            printf("%c", _buffer[i]);
+        }
+        printf("\n\n");
+
     } else {
         _buffer_length = 0;
     }
@@ -76,24 +115,19 @@ int NMEAParser::processBuffer() {
     return messagesParsed;
 }
 
-bool NMEAParser::verifyChecksum(const char* nmeaMessage, int length) {
-    if (length < 4) { // $ + data + * + checksum
-        return false; // Invalid message format
-    }
 
+bool NMEAParser::verifyChecksum(const char* nmeaMessage, int length)
+{
     const char* asteriskPos = strchr(nmeaMessage, '*');
-    if (!asteriskPos || asteriskPos - nmeaMessage > length - 3) {
-        return false; // No checksum or malformed message
-    }
 
     unsigned char calculatedChecksum = 0;
     for (const char* p = nmeaMessage + 1; p < asteriskPos; p++) {
         calculatedChecksum ^= *p;
     }
 
-    char receivedChecksum[3] = {asteriskPos[1], asteriskPos[2], '\0'};
+    char receivedChecksumStr[3] = {asteriskPos[1], asteriskPos[2], '\0'};
     int messageChecksum = 0;
-    sscanf(receivedChecksum, "%X", &messageChecksum);
+    sscanf(receivedChecksumStr, "%X", &messageChecksum);
 
     return messageChecksum == calculatedChecksum;
 }

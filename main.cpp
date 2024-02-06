@@ -11,7 +11,7 @@ int main() {
     NMEAParser parser;
 
     // Open the serial port
-    int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+    int fd = open(portname, O_RDWR | O_NOCTTY);
     if (fd < 0) {
         std::cerr << "Error opening " << portname << ": " << strerror(errno) << std::endl;
         return -1;
@@ -60,9 +60,10 @@ int main() {
             break;
         }
 
-        if (numBytesRead > 0) {
+        if (numBytesRead > 1) {
+            // std::cout << "numBytesRead " << numBytesRead << std::endl;
             int parsedCount = parser.parse(readBuf, numBytesRead);
-            std::cout << "Parsed " << parsedCount << " messages." << std::endl;
+            // std::cout << "Parsed " << parsedCount << " messages." << std::endl;
         }
     }
 
