@@ -13,10 +13,14 @@ public:
 	int parse(const char* buffer, int length); // Returns the number of messages parsed
 
 private:
-	static const int BUFFER_SIZE = 2048;
-	char _buffer[BUFFER_SIZE] = {};
-	int _buffer_length = 0;
+	// Decodes an NMEA message and updates the GNSS data structure
+	void handle_nmea_message(const char* buffer, int length);
 
-	int process_buffer(); // Process the buffer and return the number of messages parsed
+	// Process the buffer and return the number of messages parsed
+	int process_buffer();
 	bool validate_checksum(const char* nmeaMessage, int length);
+
+	static const int BUFFER_SIZE = 2048;
+	char _buffer[2048] = {};
+	int _buffer_length = 0;
 };

@@ -9,7 +9,7 @@ NMEAParser::NMEAParser()
 // Append data to the internal buffer, process the buffer, and return the number of messages parsed.
 int NMEAParser::parse(const char* buffer, int length)
 {
-	if (_buffer_length + length < BUFFER_SIZE) {
+	if (_buffer_length + length < sizeof(_buffer)) {
 		memcpy(_buffer + _buffer_length, buffer, length);
 		_buffer_length += length;
 	} else {
@@ -17,6 +17,12 @@ int NMEAParser::parse(const char* buffer, int length)
 	}
 
 	return process_buffer();
+}
+
+// Handles a NMEA message which has already been validated.
+void NMEAParser::handle_nmea_message(const char* buffer, int length)
+{
+
 }
 
 // Process the buffer and return the number of messages parsed.
@@ -60,8 +66,8 @@ int NMEAParser::process_buffer()
 		if (validate_checksum(start, message_length)) {
 			messages_parsed++;
 
-			// TODO: handle_message()
-			// handle_message(start, message_length)
+			// Updates GNSS struct
+			handle_nmea_message(start, message_length);
 
 			// Increment to the start of next expected message
 			start_pos = (start - _buffer) + message_length;
@@ -81,7 +87,7 @@ int NMEAParser::process_buffer()
 		_buffer_length -= start_pos;
 
 #if defined(DEBUG_BUILD)
-		PX4_INFO("Incomplete message", bytes_remaining);
+		PX4_INFO("Incomplete message");
 		PX4_INFO("bytes_remaining: %d", bytes_remaining);
 		for (size_t i = 0; i < _buffer_length; i++) {
 			printf("%c", _buffer[i]);
