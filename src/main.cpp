@@ -17,7 +17,8 @@ static uint64_t currentTimeUs()
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
-int main() {
+int main()
+{
 
 #if defined(LOG_RAW)
 	std::ofstream raw_data_file;
@@ -27,6 +28,7 @@ int main() {
 		std::cerr << "Error opening file for writing.\n";
 		return -1;
 	}
+
 #endif
 
 	const char* port = "/dev/ttyUSB0";
@@ -34,6 +36,7 @@ int main() {
 
 	// Open the serial port
 	int fd = open(port, O_RDWR | O_NOCTTY);
+
 	if (fd < 0) {
 		PX4_INFO("Error opening %s: %s", port, strerror(errno));
 		return -1;
@@ -42,6 +45,7 @@ int main() {
 	// Configure the serial port
 	struct termios tty;
 	memset(&tty, 0, sizeof tty);
+
 	if (tcgetattr(fd, &tty) != 0) {
 		PX4_INFO("Error from tcgetattr %s", strerror(errno));
 		return -1;
@@ -89,6 +93,7 @@ int main() {
 
 	while (1) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));
+
 		if (bytes_read < 0) {
 			PX4_INFO("Error reading: %s", strerror(errno));
 			break;
@@ -100,15 +105,12 @@ int main() {
 
 			auto gps_data = parser.gps_report();
 
+			// TESTING
 			gps_data.timestamp = currentTimeUs();
 			gps_data.eph = 1.69;
 			gps_data.epv = 1.25;
 
 			writer.writeData(msg_id, gps_data);
-
-			// Parser stores data and residual bytes remain in internal buffer
-
-			// TODO: query sensor_gps_s from the parser
 
 
 #if defined(DEBUG_BUILD)

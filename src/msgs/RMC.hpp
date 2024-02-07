@@ -27,18 +27,31 @@ void NMEAParser::handle_RMC(const char* msg)
 	// <cr><lf>
 
 	char* endp = nullptr;
+
 	if (msg && *(++msg) != ',') { _rmc.timestamp = strtof(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.status = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _rmc.lat = strtod(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.ns = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _rmc.lon = strtod(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.ew = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _rmc.speed = strtof(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.track_good = strtof(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.date = static_cast<int>(strtol(msg, &endp, 10)); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.mag_var = strtof(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _rmc.mag_var_dir = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _rmc.mode = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _rmc.nav_status = *(msg++); }
 
 	if (_gga.ns == 'S') {

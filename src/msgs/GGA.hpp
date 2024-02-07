@@ -26,17 +26,29 @@ void NMEAParser::handle_GGA(const char* msg)
 	// <cr><lf>
 
 	char* endp = nullptr;
+
 	if (msg && *(++msg) != ',') { _gga.timestamp = strtod(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.lat = strtod(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.ns = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _gga.lon = strtod(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.ew = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _gga.fix_quality = strtol(msg, &endp, 10); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.sats = strtol(msg, &endp, 10); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.hdop = strtof(msg, &endp); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.alt = strtol(msg, &endp, 10); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.alt_val = *(msg++); }
+
 	if (msg && *(++msg) != ',') { _gga.geo_sep = strtol(msg, &endp, 10); msg = endp; }
+
 	if (msg && *(++msg) != ',') { _gga.geo_val = *(msg++); }
 
 	if (_gga.ns == 'S') {

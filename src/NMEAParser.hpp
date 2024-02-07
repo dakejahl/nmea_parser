@@ -6,7 +6,8 @@
 #include "nmea_format.hpp"
 #include "px4_include.hpp"
 
-class NMEAParser {
+class NMEAParser
+{
 public:
 	int parse(const char* buffer, int length); // Returns the number of messages parsed
 
@@ -39,7 +40,10 @@ private:
 
 	RMC_Data _rmc;
 	GGA_Data _gga;
-
+	VTG_Data _vtg;
+	GST_Data _gst;
+	GSA_Data _gsa;
+	// GBS_Data _gbs;
 
 	// Data from NMEA structs will be filled into this report for PX4
 	SensorGps _gps_report = {};

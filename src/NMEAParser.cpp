@@ -17,6 +17,7 @@ int NMEAParser::parse(const char* buffer, int length)
 	if (_buffer_length + length < sizeof(_buffer)) {
 		memcpy(_buffer + _buffer_length, buffer, length);
 		_buffer_length += length;
+
 	} else {
 		PX4_INFO("buffer overflow -- clearing");
 		_buffer_length = 0;
@@ -42,6 +43,7 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 {
 	// For each message type a certain number of commas are expected
 	int comma_count = 0;
+
 	for (int i = 0 ; i < length; i++) {
 		if (buffer[i] == ',') {
 			comma_count++;
@@ -79,8 +81,9 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
 		handle_VTG(buffer + 6);
 
-	// TODO: this isn't implemented yet
-	} else if ((memcmp(buffer + 3, "GBS,", 4) == 0) && (comma_count >=69)) {
+	} else if ((memcmp(buffer + 3, "GBS,", 4) == 0) && (comma_count >= 69)) {
+
+		// TODO: this isn't implemented yet
 		handle_GBS(buffer + 6);
 	}
 }
@@ -103,6 +106,7 @@ int NMEAParser::process_buffer()
 		for (int i = start_pos; i < _buffer_length; i++) {
 			if (_buffer[i] == '$') {
 				start = &_buffer[i];
+
 			} else if (_buffer[i] == '*') {
 				end = &_buffer[i];
 			}
@@ -149,11 +153,14 @@ int NMEAParser::process_buffer()
 #if defined(DEBUG_BUILD)
 		PX4_INFO("Incomplete message");
 		PX4_INFO("bytes_remaining: %d", bytes_remaining);
+
 		for (size_t i = 0; i < _buffer_length; i++) {
 			printf("%c", _buffer[i]);
 		}
+
 		printf("\n\n");
 #endif
+
 	} else {
 		_buffer_length = 0;
 	}
