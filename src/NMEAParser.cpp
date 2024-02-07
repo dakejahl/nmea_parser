@@ -1,10 +1,4 @@
-#include <cstring>
-#include <cstdio>
 #include "NMEAParser.hpp"
-
-NMEAParser::NMEAParser()
-	: _buffer_length(0)
-{}
 
 // Append data to the internal buffer, process the buffer, and return the number of messages parsed.
 int NMEAParser::parse(const char* buffer, int length)
@@ -22,7 +16,56 @@ int NMEAParser::parse(const char* buffer, int length)
 // Handles a NMEA message which has already been validated.
 void NMEAParser::handle_nmea_message(const char* buffer, int length)
 {
+	// For each message type a certain number of commas are expected
+	int comma_count = 0;
+	for (int i = 0 ; i < length; i++) {
+		if (buffer[i] == ',') {
+			comma_count++;
+		}
+	}
 
+	// $GNRMC,,V,,,,,,,,,,N,V*37
+	// $GNGGA,,,,,,0,00,0.0,,M,,M,,*56
+	// $GNVTG,,T,,M,,N,,K,N*32
+	// $GNGST,,,,,,,,*49
+	// $GNGBS,,,,,,,,,,*5F
+	// $GNGSA,A,1,,,,,,,,,,,,,0.0,0.0,0.0,1*33
+
+	// The ID starts after the first 3 bytes ($GN)
+	// The data starts after the first 6 bytes ($GNRMC)
+
+
+	if ((memcmp(buffer + 3, "ZDA,", 4) == 0) && (comma_count == 6)) {
+		handle_ZDA(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GGA,", 4) == 0) && (comma_count >= 14)) {
+		handle_GGA(buffer + 6);
+
+	} else if (memcmp(buffer + 3, "HDT,", 4) == 0 && comma_count == 2) {
+		handle_HDT(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GNS,", 4) == 0) && (comma_count >= 12)) {
+		handle_GNS(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "RMC,", 4) == 0) && (comma_count >= 11)) {
+		handle_RMC(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GST,", 4) == 0) && (comma_count == 8)) {
+		handle_GST(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GSA,", 4) == 0) && (comma_count >= 17)) {
+		handle_GSA(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GSV,", 4) == 0)) {
+		handle_GSV(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
+		handle_VTG(buffer + 6);
+
+	// TODO: this isn't implemented yet
+	} else if ((memcmp(buffer + 3, "GBS,", 4) == 0) && (comma_count >=69)) {
+		handle_GBS(buffer + 6);
+	}
 }
 
 // Process the buffer and return the number of messages parsed.
@@ -100,7 +143,6 @@ int NMEAParser::process_buffer()
 
 	return messages_parsed;
 }
-
 
 bool NMEAParser::validate_checksum(const char* nmea_message, int length)
 {
