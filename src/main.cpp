@@ -5,14 +5,30 @@
 #include <cstring>
 #include "NMEAParser.hpp"
 
+#if defined(LOG_RAW)
+#include <iostream>
+#include <fstream>
+#endif
+
 int main() {
-	const char* portname = "/dev/ttyUSB0";
+
+#if defined(LOG_RAW)
+	std::ofstream raw_data_file;
+	raw_data_file.open("raw.txt", std::ios::out | std::ios::trunc);
+
+	if (!raw_data_file.is_open()) {
+		std::cerr << "Error opening file for writing.\n";
+		return -1;
+	}
+#endif
+
+	const char* port = "/dev/ttyUSB0";
 	NMEAParser parser;
 
 	// Open the serial port
-	int fd = open(portname, O_RDWR | O_NOCTTY);
+	int fd = open(port, O_RDWR | O_NOCTTY);
 	if (fd < 0) {
-		PX4_INFO("Error opening %s: %s", portname, strerror(errno));
+		PX4_INFO("Error opening %s: %s", port, strerror(errno));
 		return -1;
 	}
 
@@ -49,18 +65,18 @@ int main() {
 	}
 
 	const int BUF_SIZE = 1024;
-	char readBuf[BUF_SIZE];
+	char buffer[BUF_SIZE];
 
-	while (true) {
-		int numBytesRead = read(fd, readBuf, sizeof(readBuf));
-		if (numBytesRead < 0) {
+	while (1) {
+		int bytes_read = read(fd, buffer, sizeof(buffer));
+		if (bytes_read < 0) {
 			PX4_INFO("Error reading: %s", strerror(errno));
 			break;
 		}
 
-		if (numBytesRead > 1) {
-			// std::cout << "numBytesRead " << numBytesRead << std::endl;
-			int parsedCount = parser.parse(readBuf, numBytesRead);
+		if (bytes_read > 1) {
+			// std::cout << "bytes_read " << bytes_read << std::endl;
+			int parsedCount = parser.parse(buffer, bytes_read);
 
 			auto gps = parser.gps_report();
 
@@ -72,8 +88,10 @@ int main() {
 			PX4_INFO("Parsed %d messages", parsedCount);
 #endif
 #if defined(LOG_RAW)
+			PX4_INFO("writing to file: %d", bytes_read);
+			raw_data_file.write(buffer, bytes_read);
+			raw_data_file.flush();
 #endif
-
 		}
 	}
 

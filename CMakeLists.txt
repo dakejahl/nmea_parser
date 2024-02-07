@@ -6,9 +6,15 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(DEBUG_BUILD "Enable debug build" OFF)
+option(LOG_RAW "Log raw NMEA data to a file raw.txt" OFF)
+
 
 if(DEBUG_BUILD)
     add_definitions(-DDEBUG_BUILD)
+endif()
+
+if(LOG_RAW)
+    add_definitions(-DLOG_RAW)
 endif()
 
 include_directories(src)

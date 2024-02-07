@@ -1,5 +1,5 @@
 all:
-	cmake -Bbuild -H. -DDEBUG_BUILD=ON; cmake --build build
+	cmake -Bbuild -H. -DDEBUG_BUILD=ON -DLOG_RAW=ON; cmake --build build
 
 clean:
 	@rm -rf build/
