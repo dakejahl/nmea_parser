@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(GPSParser)
+project(NMEAParser)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
@@ -14,10 +14,10 @@ endif()
 include_directories(src)
 
 # Add the executable
-add_executable(GPSParser
+add_executable(NMEAParser
     src/main.cpp
     src/NMEAParser.cpp
 )
 
 # If you have additional libraries to link against, use the target_link_libraries command
-# target_link_libraries(GPSParser library_name)
+# target_link_libraries(NMEAParser library_name)
