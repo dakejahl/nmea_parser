@@ -12,7 +12,7 @@ void NMEAParser::handle_RMC(const char* msg)
 	// <Timestamp> 		-- UTC time of GPS sample, hhmmss.sss
 	// <Status> 		-- "A" = valid, "V" = Warning, "V" is reported in NO FIX conditions and "A" is reported in 2D and 3D fix conditions.
 	// <Lat> 			-- Latitude as degrees:, DDDMM.MMMMM
-	// <N/S> 			--  Latitude direction, "N" or "S"
+	// <N/S> 			-- Latitude direction, "N" or "S"
 	// <Long>			-- Longitude as degrees:, DDDMM.MMMMM
 	// <E/W> 			-- Longitude direction, "E" or "W"
 	// <Speed> 			-- Speed over ground in knots, ddd.d,
@@ -40,6 +40,14 @@ void NMEAParser::handle_RMC(const char* msg)
 	if (msg && *(++msg) != ',') { _rmc.mag_var_dir = *(msg++); }
 	if (msg && *(++msg) != ',') { _rmc.mode = *(msg++); }
 	if (msg && *(++msg) != ',') { _rmc.nav_status = *(msg++); }
+
+	if (_gga.ns == 'S') {
+		_rmc.lat = -_rmc.lat;
+	}
+
+	if (_gga.ew == 'W') {
+		_rmc.lon = -_rmc.lon;
+	}
 
 #if defined(DEBUG_BUILD)
 	_rmc.print();

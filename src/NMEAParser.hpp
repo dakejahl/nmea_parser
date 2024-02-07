@@ -38,6 +38,8 @@ private:
 	int _buffer_length = 0;
 
 	RMC_Data _rmc;
+	GGA_Data _gga;
+
 
 	// Data from NMEA structs will be filled into this report for PX4
 	SensorGps _gps_report = {};
