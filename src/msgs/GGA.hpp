@@ -46,4 +46,8 @@ void NMEAParser::handle_GGA(const char* msg)
 	if (_gga.ew == 'W') {
 		_gga.lon = -_gga.lon;
 	}
+
+#if defined(DEBUG_BUILD)
+	_gga.print();
+#endif
 }

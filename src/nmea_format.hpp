@@ -82,7 +82,7 @@ struct GGA_Data {
 	char geo_val = '?';
 
 	void print() {
-		PX4_INFO("RMC");
+		PX4_INFO("GGA");
 	    PX4_INFO("timestamp: %f", timestamp);
 	    PX4_INFO("lat: %f", lat);
 	    PX4_INFO("ns: %c", ns);
@@ -95,6 +95,7 @@ struct GGA_Data {
 	    PX4_INFO("alt_val: %c", alt_val);
 	    PX4_INFO("geo_sep: %d", geo_sep);
 	    PX4_INFO("geo_val: %c", geo_val);
+	    PX4_INFO("");
 	}
 };
 

@@ -84,6 +84,9 @@ int main() {
 	const uint16_t msg_id = writer.writeAddLoggedMessage(SensorGps::messageName());
 	writer.writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
 
+	// flush, for some reason always read two null bytes first
+	read(fd, buffer, sizeof(buffer));
+
 	while (1) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));
 		if (bytes_read < 0) {
