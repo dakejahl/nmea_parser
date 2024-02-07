@@ -1,7 +1,4 @@
-#include <NMEAParser.hpp>
-
-void NMEAParser::handle_RMC(const char* msg)
-{
+struct RMC_Data {
 	// $GNRMC,,V,,,,,,,,,,N,V*37
 
 	// Recommended Minimum Specific GPS/Transit data. Time, date, position and speed data provided by the GNSS
@@ -26,36 +23,17 @@ void NMEAParser::handle_RMC(const char* msg)
 	// <checksum>
 	// <cr><lf>
 
-	RMC_Data data = {};
-
-	char* endp = nullptr;
-	if (msg && *(++msg) != ',') { data.timestamp = strtof(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.status = *(msg++); }
-
-	if (msg && *(++msg) != ',') { data.lat = strtod(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.ns = *(msg++); }
-
-	if (msg && *(++msg) != ',') { data.lon = strtod(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.ew = *(msg++); }
-
-	if (msg && *(++msg) != ',') { data.speed = strtof(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.track_good = strtof(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.date = static_cast<int>(strtol(msg, &endp, 10)); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.mag_var = strtof(msg, &endp); msg = endp; }
-
-	if (msg && *(++msg) != ',') { data.mag_var_dir = *(msg++); }
-
-	if (msg && *(++msg) != ',') { data.mode = *(msg++); }
-
-	if (msg && *(++msg) != ',') { data.nav_status = *(msg++); }
-
-#if defined(DEBUG_BUILD)
-	PX4_INFO("handle_RMC");
-#endif
-}
+	float timestamp = 0.0;
+	char status = 'V';
+	double lat = 0.0;
+	char ns = '?';
+	double lon = 0.0;
+	char ew = '?';
+	float speed = 0.f;
+	float track_good = 0.f;
+	int date = 0;
+	float mag_var = 0.f;
+	char mag_var_dir = '?';
+	char mode = '?';
+	char nav_status = '?';
+};

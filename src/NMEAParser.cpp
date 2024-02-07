@@ -1,5 +1,16 @@
 #include "NMEAParser.hpp"
 
+#include <msgs/GBS.hpp>
+#include <msgs/GGA.hpp>
+#include <msgs/GNS.hpp>
+#include <msgs/GSA.hpp>
+#include <msgs/GST.hpp>
+#include <msgs/GSV.hpp>
+#include <msgs/HDT.hpp>
+#include <msgs/RMC.hpp>
+#include <msgs/VTG.hpp>
+#include <msgs/ZDA.hpp>
+
 // Append data to the internal buffer, process the buffer, and return the number of messages parsed.
 int NMEAParser::parse(const char* buffer, int length)
 {
@@ -25,15 +36,8 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 	}
 
 	// $GNRMC,,V,,,,,,,,,,N,V*37
-	// $GNGGA,,,,,,0,00,0.0,,M,,M,,*56
-	// $GNVTG,,T,,M,,N,,K,N*32
-	// $GNGST,,,,,,,,*49
-	// $GNGBS,,,,,,,,,,*5F
-	// $GNGSA,A,1,,,,,,,,,,,,,0.0,0.0,0.0,1*33
-
 	// The ID starts after the first 3 bytes ($GN)
 	// The data starts after the first 6 bytes ($GNRMC)
-
 
 	if ((memcmp(buffer + 3, "ZDA,", 4) == 0) && (comma_count == 6)) {
 		handle_ZDA(buffer + 6);

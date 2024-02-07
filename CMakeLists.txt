@@ -17,16 +17,6 @@ include_directories(src)
 add_executable(GPSParser
     src/main.cpp
     src/NMEAParser.cpp
-    src/msgs/GBS.cpp
-    src/msgs/GGA.cpp
-    src/msgs/GNS.cpp
-    src/msgs/GSA.cpp
-    src/msgs/GST.cpp
-    src/msgs/GSV.cpp
-    src/msgs/HDT.cpp
-    src/msgs/RMC.cpp
-    src/msgs/VTG.cpp
-    src/msgs/ZDA.cpp
 )
 
 # If you have additional libraries to link against, use the target_link_libraries command

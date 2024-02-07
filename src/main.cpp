@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
-
 #include "NMEAParser.hpp"
 
 int main() {
