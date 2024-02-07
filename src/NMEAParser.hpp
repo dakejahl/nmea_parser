@@ -3,18 +3,17 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
-#include <nmea_format.hpp>
-
-#ifndef PX4_INFO
-#define PX4_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
-#endif
+#include "nmea_format.hpp"
+#include "px4_include.hpp"
 
 class NMEAParser {
 public:
 	int parse(const char* buffer, int length); // Returns the number of messages parsed
 
+	SensorGps gps_report() { return _gps_report; };
+
 private:
-	// Decodes an NMEA message and updates the GNSS data structure
+	// Parses an NMEA message and updates the GNSS data structure
 	void handle_nmea_message(const char* buffer, int length);
 
 	void handle_ZDA(const char* msg);
@@ -28,6 +27,8 @@ private:
 	void handle_VTG(const char* msg);
 	void handle_GBS(const char* msg);
 
+	void update_gps_report();
+
 	// Process the buffer and return the number of messages parsed
 	int process_buffer();
 	bool validate_checksum(const char* nmeaMessage, int length);
@@ -37,5 +38,8 @@ private:
 	int _buffer_length = 0;
 
 	RMC_Data _rmc;
+
+	// Data from NMEA structs will be filled into this report for PX4
+	SensorGps _gps_report = {};
 };
 

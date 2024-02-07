@@ -18,10 +18,23 @@ int NMEAParser::parse(const char* buffer, int length)
 		memcpy(_buffer + _buffer_length, buffer, length);
 		_buffer_length += length;
 	} else {
-		PX4_INFO("buffer overflow");
+		PX4_INFO("buffer overflow -- clearing");
+		_buffer_length = 0;
 	}
 
-	return process_buffer();
+	int messages_parsed = process_buffer();
+
+	// Update the _gps_report
+	if (messages_parsed) {
+		update_gps_report();
+	}
+
+	return messages_parsed;
+}
+
+void NMEAParser::update_gps_report()
+{
+	// Move data from NMEA-structs to SensorGps-struct
 }
 
 // Handles a NMEA message which has already been validated.

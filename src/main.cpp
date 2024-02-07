@@ -61,9 +61,19 @@ int main() {
 		if (numBytesRead > 1) {
 			// std::cout << "numBytesRead " << numBytesRead << std::endl;
 			int parsedCount = parser.parse(readBuf, numBytesRead);
+
+			auto gps = parser.gps_report();
+
+			// Parser stores data and residual bytes remain in internal buffer
+
+			// TODO: query sensor_gps_s from the parser
+
 #if defined(DEBUG_BUILD)
 			PX4_INFO("Parsed %d messages", parsedCount);
 #endif
+#if defined(LOG_RAW)
+#endif
+
 		}
 	}
 

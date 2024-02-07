@@ -1,8 +1,6 @@
 #pragma once
 
-#ifndef PX4_INFO
-#define PX4_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
-#endif
+#include "px4_include.hpp"
 
 struct RMC_Data {
 	// $GNRMC,,V,,,,,,,,,,N,V*37
