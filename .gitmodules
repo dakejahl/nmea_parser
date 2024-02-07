@@ -1,0 +1,3 @@
+[submodule "third_party/ulog_cpp"]
+	path = third_party/ulog_cpp
+	url = https://github.com/PX4/ulog_cpp.git

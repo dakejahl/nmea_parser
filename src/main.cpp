@@ -10,6 +10,13 @@
 #include <fstream>
 #endif
 
+#include <chrono>
+
+static uint64_t currentTimeUs()
+{
+	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 int main() {
 
 #if defined(LOG_RAW)
@@ -67,6 +74,16 @@ int main() {
 	const int BUF_SIZE = 1024;
 	char buffer[BUF_SIZE];
 
+	ulog_cpp::SimpleWriter writer("nmea.ulg", currentTimeUs());
+
+	writer.writeInfo("NMEAParser", "NMEADataLogger");
+	writer.writeParameter("PARAM_A", 382.23F);
+	writer.writeParameter("PARAM_B", 8272);
+	writer.writeMessageFormat(SensorGps::messageName(), SensorGps::fields());
+	writer.headerComplete();
+	const uint16_t msg_id = writer.writeAddLoggedMessage(SensorGps::messageName());
+	writer.writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
+
 	while (1) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));
 		if (bytes_read < 0) {
@@ -78,11 +95,18 @@ int main() {
 			// std::cout << "bytes_read " << bytes_read << std::endl;
 			int parsedCount = parser.parse(buffer, bytes_read);
 
-			auto gps = parser.gps_report();
+			auto gps_data = parser.gps_report();
+
+			gps_data.timestamp = currentTimeUs();
+			gps_data.eph = 1.69;
+			gps_data.epv = 1.25;
+
+			writer.writeData(msg_id, gps_data);
 
 			// Parser stores data and residual bytes remain in internal buffer
 
 			// TODO: query sensor_gps_s from the parser
+
 
 #if defined(DEBUG_BUILD)
 			PX4_INFO("Parsed %d messages", parsedCount);

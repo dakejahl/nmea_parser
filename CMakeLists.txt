@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(NMEAParser)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(DEBUG_BUILD "Enable debug build" OFF)
@@ -25,5 +25,9 @@ add_executable(NMEAParser
     src/NMEAParser.cpp
 )
 
-# If you have additional libraries to link against, use the target_link_libraries command
-# target_link_libraries(NMEAParser library_name)
+# ulg generation for analysis
+add_subdirectory(third_party/ulog_cpp)
+
+target_link_libraries(NMEAParser PUBLIC
+    ulog_cpp::ulog_cpp
+)
