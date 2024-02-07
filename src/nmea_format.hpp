@@ -1,3 +1,9 @@
+#pragma once
+
+#ifndef PX4_INFO
+#define PX4_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
+#endif
+
 struct RMC_Data {
 	// $GNRMC,,V,,,,,,,,,,N,V*37
 
@@ -36,4 +42,22 @@ struct RMC_Data {
 	char mag_var_dir = '?';
 	char mode = '?';
 	char nav_status = '?';
+
+	void print() {
+		PX4_INFO("RMC");
+	    PX4_INFO("timestamp: %f", timestamp);
+	    PX4_INFO("status: %c", status);
+	    PX4_INFO("lat: %f", lat);
+	    PX4_INFO("ns: %c", ns);
+	    PX4_INFO("lon: %f", lon);
+	    PX4_INFO("ew: %c", ew);
+	    PX4_INFO("speed: %f", speed);
+	    PX4_INFO("track_good: %f", track_good);
+	    PX4_INFO("date: %d", date);
+	    PX4_INFO("mag_var: %f", mag_var);
+	    PX4_INFO("mag_var_dir: %c", mag_var_dir);
+	    PX4_INFO("mode: %c", mode);
+	    PX4_INFO("nav_status: %c", nav_status);
+	    PX4_INFO("");
+	}
 };

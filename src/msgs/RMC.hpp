@@ -42,6 +42,6 @@ void NMEAParser::handle_RMC(const char* msg)
 	if (msg && *(++msg) != ',') { _rmc.nav_status = *(msg++); }
 
 #if defined(DEBUG_BUILD)
-	PX4_INFO("handle_RMC");
+	_rmc.print();
 #endif
 }
