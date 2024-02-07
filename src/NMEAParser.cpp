@@ -2,11 +2,9 @@
 
 #include <msgs/GBS.hpp>
 #include <msgs/GGA.hpp>
-#include <msgs/GNS.hpp>
 #include <msgs/GSA.hpp>
 #include <msgs/GST.hpp>
 #include <msgs/GSV.hpp>
-#include <msgs/HDT.hpp>
 #include <msgs/RMC.hpp>
 #include <msgs/VTG.hpp>
 #include <msgs/ZDA.hpp>
@@ -50,21 +48,11 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 		}
 	}
 
-	// $GNRMC,,V,,,,,,,,,,N,V*37
 	// The ID starts after the first 3 bytes ($GN)
 	// The data starts after the first 6 bytes ($GNRMC)
 
-	if ((memcmp(buffer + 3, "ZDA,", 4) == 0) && (comma_count == 6)) {
-		handle_ZDA(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "GGA,", 4) == 0) && (comma_count >= 14)) {
+	if ((memcmp(buffer + 3, "GGA,", 4) == 0) && (comma_count >= 14)) {
 		handle_GGA(buffer + 6);
-
-	} else if (memcmp(buffer + 3, "HDT,", 4) == 0 && comma_count == 2) {
-		handle_HDT(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "GNS,", 4) == 0) && (comma_count >= 12)) {
-		handle_GNS(buffer + 6);
 
 	} else if ((memcmp(buffer + 3, "RMC,", 4) == 0) && (comma_count >= 11)) {
 		handle_RMC(buffer + 6);
@@ -75,16 +63,24 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 	} else if ((memcmp(buffer + 3, "GSA,", 4) == 0) && (comma_count >= 17)) {
 		handle_GSA(buffer + 6);
 
-	} else if ((memcmp(buffer + 3, "GSV,", 4) == 0)) {
-		handle_GSV(buffer + 6);
-
 	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
 		handle_VTG(buffer + 6);
 
-	} else if ((memcmp(buffer + 3, "GBS,", 4) == 0) && (comma_count >= 69)) {
+		// } else if ((memcmp(buffer + 3, "GBS,", 4) == 0) && (comma_count >= 69)) {
+		// 	// TODO: this isn't implemented yet
+		// 	handle_GBS(buffer + 6);
 
-		// TODO: this isn't implemented yet
-		handle_GBS(buffer + 6);
+		// } else if ((memcmp(bufmakfer + 3, "ZDA,", 4) == 0) && (comma_count == 6)) {
+		// 	handle_ZDA(buffer + 6);
+
+		// } else if ((memcmp(buffer + 3, "GSV,", 4) == 0)) {
+		// 	handle_GSV(buffer + 6);
+
+	} else {
+		char msg[4];
+		memcpy(msg, buffer + 3, 3);
+		msg[4] = '\0';
+		PX4_INFO("unknown message: %s", msg);
 	}
 }
 

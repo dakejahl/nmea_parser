@@ -19,8 +19,6 @@ private:
 
 	void handle_ZDA(const char* msg);
 	void handle_GGA(const char* msg);
-	void handle_HDT(const char* msg);
-	void handle_GNS(const char* msg);
 	void handle_RMC(const char* msg);
 	void handle_GST(const char* msg);
 	void handle_GSA(const char* msg);
