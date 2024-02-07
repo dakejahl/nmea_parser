@@ -5,6 +5,12 @@ project(GPSParser)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+option(DEBUG_BUILD "Enable debug build" OFF)
+
+if(DEBUG_BUILD)
+    add_definitions(-DDEBUG_BUILD)
+endif()
+
 # Add the executable
 add_executable(GPSParser main.cpp NMEAParser.cpp)
 

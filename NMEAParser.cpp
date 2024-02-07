@@ -1,134 +1,113 @@
-// NMEAParser.cpp
-
-#include "NMEAParser.hpp"
 #include <cstring>
 #include <cstdio>
-#include <iostream>
+#include "NMEAParser.hpp"
 
 NMEAParser::NMEAParser()
 	: _buffer_length(0)
 {}
 
-NMEAParser::~NMEAParser()
-{}
-
+// Append data to the internal buffer, process the buffer, and return the number of messages parsed.
 int NMEAParser::parse(const char* buffer, int length)
 {
-	// Append new data to the internal buffer
 	if (_buffer_length + length < BUFFER_SIZE) {
 		memcpy(_buffer + _buffer_length, buffer, length);
 		_buffer_length += length;
 	} else {
-		std::cout << "overflow" << std::endl;
-		// Handle buffer overflow here.
+		PX4_INFO("buffer overflow");
 	}
 
-	// Process the buffer and return the number of messages parsed
-	return processBuffer();
+	return process_buffer();
 }
 
-const char* findCharInArray(const char* start, char c, int length)
+// Process the buffer and return the number of messages parsed.
+int NMEAParser::process_buffer()
 {
-	for (int i = 0; i < length; i++) {
-		if (start[i] == c) {
-			return &start[i];
-		}
-	}
-	return nullptr;
-}
-
-int NMEAParser::processBuffer()
-{
-	int messagesParsed = 0;
-	int startPos = 0;
+	int messages_parsed = 0;
+	int start_pos = 0;
 	int bytes_remaining = _buffer_length;
+	int message_length = 0;
 
-	while (1) {
-		// Find the start ($) of an NMEA message
-		const char* start = findCharInArray(_buffer + startPos, '$', bytes_remaining);
+	while (bytes_remaining != 0) {
 
-		if (bytes_remaining == 0) {
+		bool found_message_frame = false;
+		const char* start = nullptr;
+		const char* end = nullptr;
+
+		// Find the start ($) and end (*) an NMEA message
+		for (int i = start_pos; i < _buffer_length; i++) {
+			if (_buffer[i] == '$') {
+				start = &_buffer[i];
+			} else if (_buffer[i] == '*') {
+				end = &_buffer[i];
+			}
+
+			message_length = end - start + 5;
+
+			if (start && end && end > start && message_length <= bytes_remaining) {
+				found_message_frame = true;
+				break;
+			}
+		}
+
+		if (!found_message_frame) {
+			// 1. No start or end characters found
+			// 2. No start character found _before_ an end character
+			// 3. Start found but not end (incomplete, most common)
+			// 4. Start and end found but we may be missing the checksum and CR LF bytes
 			break;
 		}
 
-		if (!start) {
-			std::cout << "missingstart: bytes_remaining:" << bytes_remaining << std::endl;
-			std::string msg(_buffer + startPos, bytes_remaining);
-			std::cout << "missing start: " << msg.c_str() << std::endl;
-			break;
-		}
-
-		// Find the end (*) of the NMEA message, starting from the found start position
-		const char* end = findCharInArray(start, '*', _buffer + _buffer_length - start);
-		if (!end) {
-			std::cout << "missing end" << std::endl;
-			break; // No end found from the start position, message is likely incomplete
-		}
-
-		// Found start and end of message
-		int messageLength = end - start + 5; // * (1), crc (2), crlf (2)
-
-		// $ + data + * + checksum
-		// $GNGGA,,,,,,0,00,0.0,,M,,M,,*56
-		// auto strmsg = std::string(start, messageLength);
-		// std::cout << strmsg << std::endl;
-
-		if (messageLength > bytes_remaining) {
-			std::cout << "incomplete message" << std::endl;
-			break;
-		}
-
-		if (validateChecksum(start, messageLength)) {
-			messagesParsed++;
+		if (validate_checksum(start, message_length)) {
+			messages_parsed++;
 
 			// TODO: handle_message()
+			// handle_message(start, message_length)
 
 			// Increment to the start of next expected message
-			startPos = (start - _buffer) + messageLength;
+			start_pos = (start - _buffer) + message_length;
 
 		} else {
-			std::cout << "Invalid checksum" << std::endl;
-			// If checksum is invalid or message incomplete, move startPos just after this '$'
-			startPos = (start - _buffer) + 1;
+			PX4_INFO("Invalid checksum");
+			// If checksum is invalid or message incomplete, move start_pos just after this '$'
+			start_pos = (start - _buffer) + 1;
 		}
 
-		bytes_remaining = _buffer_length - startPos;
+		bytes_remaining = _buffer_length - start_pos;
 	}
 
-	// Shift remaining data to the beginning of the buffer
-	if (startPos < _buffer_length) {
-		memmove(_buffer, _buffer + startPos, bytes_remaining);
-		_buffer_length -= startPos;
+	// If buffer iterator start_pos isn't pointing to the end of the buffer, shift remaining data to the beginning of the buffer
+	if (start_pos < _buffer_length) {
+		memmove(_buffer, _buffer + start_pos, bytes_remaining);
+		_buffer_length -= start_pos;
 
-		std::cout << "bytes_remaining:" << bytes_remaining << std::endl;
-
+#if defined(DEBUG_BUILD)
+		PX4_INFO("Incomplete message", bytes_remaining);
+		PX4_INFO("bytes_remaining: %d", bytes_remaining);
 		for (size_t i = 0; i < _buffer_length; i++) {
 			printf("%c", _buffer[i]);
 		}
 		printf("\n\n");
-
+#endif
 	} else {
 		_buffer_length = 0;
 	}
 
-	std::cout << "Parsed messages: " << messagesParsed << std::endl;
-
-	return messagesParsed;
+	return messages_parsed;
 }
 
 
-bool NMEAParser::validateChecksum(const char* nmeaMessage, int length)
+bool NMEAParser::validate_checksum(const char* nmea_message, int length)
 {
-	const char* asteriskPos = strchr(nmeaMessage, '*');
+	// Example --  $GNGSA,A,1,,,,,,,,,,,,,0.0,0.0,0.0,4*36<CR><LF>
+	int recv_checksum = 0;
+	unsigned char calc_checksum = 0;
+	char recv_checksum_str[3] = {nmea_message[length - 4], nmea_message[length - 3], '\0'};
+	sscanf(recv_checksum_str, "%X", &recv_checksum);
 
-	unsigned char calculatedChecksum = 0;
-	for (const char* p = nmeaMessage + 1; p < asteriskPos; p++) {
-		calculatedChecksum ^= *p;
+	// Start after $ and end before *
+	for (int i = 1; i < length - 5; i++) {
+		calc_checksum ^= nmea_message[i];
 	}
 
-	char receivedChecksumStr[3] = {asteriskPos[1], asteriskPos[2], '\0'};
-	int messageChecksum = 0;
-	sscanf(receivedChecksumStr, "%X", &messageChecksum);
-
-	return messageChecksum == calculatedChecksum;
+	return recv_checksum == calc_checksum;
 }

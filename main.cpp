@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -13,7 +12,7 @@ int main() {
 	// Open the serial port
 	int fd = open(portname, O_RDWR | O_NOCTTY);
 	if (fd < 0) {
-		std::cerr << "Error opening " << portname << ": " << strerror(errno) << std::endl;
+		PX4_INFO("Error opening %s: %s", portname, strerror(errno));
 		return -1;
 	}
 
@@ -21,7 +20,7 @@ int main() {
 	struct termios tty;
 	memset(&tty, 0, sizeof tty);
 	if (tcgetattr(fd, &tty) != 0) {
-		std::cerr << "Error from tcgetattr: " << strerror(errno) << std::endl;
+		PX4_INFO("Error from tcgetattr %s", strerror(errno));
 		return -1;
 	}
 
@@ -45,7 +44,7 @@ int main() {
 	tty.c_cc[VTIME] = 1;
 
 	if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-		std::cerr << "Error from tcsetattr: " << strerror(errno) << std::endl;
+		PX4_INFO("Error from tcsetattr %s", strerror(errno));
 		return -1;
 	}
 
@@ -55,14 +54,16 @@ int main() {
 	while (true) {
 		int numBytesRead = read(fd, readBuf, sizeof(readBuf));
 		if (numBytesRead < 0) {
-			std::cerr << "Error reading: " << strerror(errno) << std::endl;
+			PX4_INFO("Error reading: %s", strerror(errno));
 			break;
 		}
 
 		if (numBytesRead > 1) {
 			// std::cout << "numBytesRead " << numBytesRead << std::endl;
 			int parsedCount = parser.parse(readBuf, numBytesRead);
-			// std::cout << "Parsed " << parsedCount << " messages." << std::endl;
+#if defined(DEBUG_BUILD)
+			PX4_INFO("Parsed %d messages", parsedCount);
+#endif
 		}
 	}
 
