@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
+#include <signal.h>
+
 #include "NMEAParser.hpp"
 
 #if defined(LOG_RAW)
@@ -12,13 +14,15 @@
 
 #include <chrono>
 
-static uint64_t currentTimeUs()
-{
-	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
+static bool _should_exit = false;
+static void signal_handler(int signum);
+static uint64_t currentTimeUs() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
 int main()
 {
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+	setbuf(stdout, NULL); // Disable stdout buffering
 
 #if defined(LOG_RAW)
 	std::ofstream raw_data_file;
@@ -75,11 +79,8 @@ int main()
 		return -1;
 	}
 
-	const int BUF_SIZE = 1024;
-	char buffer[BUF_SIZE];
-
+	// Setup ulog writer
 	ulog_cpp::SimpleWriter writer("nmea.ulg", currentTimeUs());
-
 	writer.writeInfo("NMEAParser", "NMEADataLogger");
 	writer.writeParameter("PARAM_A", 382.23F);
 	writer.writeParameter("PARAM_B", 8272);
@@ -88,10 +89,12 @@ int main()
 	const uint16_t msg_id = writer.writeAddLoggedMessage(SensorGps::messageName());
 	writer.writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
 
+	const int BUF_SIZE = 1024;
+	char buffer[BUF_SIZE];
 	// flush, for some reason always read two null bytes first
 	read(fd, buffer, sizeof(buffer));
 
-	while (1) {
+	while (!_should_exit) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));
 
 		if (bytes_read < 0) {
@@ -100,7 +103,6 @@ int main()
 		}
 
 		if (bytes_read > 1) {
-			// std::cout << "bytes_read " << bytes_read << std::endl;
 			int parsedCount = parser.parse(buffer, bytes_read);
 
 			auto gps_data = parser.gps_report();
@@ -119,11 +121,15 @@ int main()
 #if defined(LOG_RAW)
 			PX4_INFO("writing to file: %d", bytes_read);
 			raw_data_file.write(buffer, bytes_read);
-			raw_data_file.flush();
 #endif
 		}
 	}
 
 	close(fd);
 	return 0;
+}
+
+static void signal_handler(int signum)
+{
+	_should_exit = true;
 }

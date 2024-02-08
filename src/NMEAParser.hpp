@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include "nmea_format.hpp"
-#include "px4_include.hpp"
 
 class NMEAParser
 {
@@ -14,7 +13,7 @@ public:
 	SensorGps gps_report() { return _gps_report; };
 
 private:
-	// Parses an NMEA message and updates the GNSS data structure
+	// Parses an NMEA message and updates the NMEA data structures
 	void handle_nmea_message(const char* buffer, int length);
 
 	void handle_ZDA(const char* msg);
@@ -26,6 +25,7 @@ private:
 	void handle_VTG(const char* msg);
 	void handle_GBS(const char* msg);
 
+	// Copy data from NMEA structs to SensorGps
 	void update_gps_report();
 
 	// Process the buffer and return the number of messages parsed
