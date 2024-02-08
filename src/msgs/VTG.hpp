@@ -41,7 +41,6 @@ void NMEAParser::handle_VTG(const char* msg)
 
 	if (msg && *(++msg) != ',') { _vtg.mode = *(msg++); }
 
-
 #if defined(DEBUG_BUILD)
 	_vtg.print();
 #endif

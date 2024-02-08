@@ -54,14 +54,6 @@ void NMEAParser::handle_RMC(const char* msg)
 
 	if (msg && *(++msg) != ',') { _rmc.nav_status = *(msg++); }
 
-	if (_gga.ns == 'S') {
-		_rmc.lat = -_rmc.lat;
-	}
-
-	if (_gga.ew == 'W') {
-		_rmc.lon = -_rmc.lon;
-	}
-
 #if defined(DEBUG_BUILD)
 	_rmc.print();
 #endif

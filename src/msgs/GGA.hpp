@@ -51,14 +51,6 @@ void NMEAParser::handle_GGA(const char* msg)
 
 	if (msg && *(++msg) != ',') { _gga.geo_val = *(msg++); }
 
-	if (_gga.ns == 'S') {
-		_gga.lat = -_gga.lat;
-	}
-
-	if (_gga.ew == 'W') {
-		_gga.lon = -_gga.lon;
-	}
-
 #if defined(DEBUG_BUILD)
 	_gga.print();
 #endif

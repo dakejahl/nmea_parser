@@ -9,6 +9,9 @@
 #include <msgs/VTG.hpp>
 #include <msgs/ZDA.hpp>
 
+#include <math.h>
+#include <time.h>
+
 // Append data to the internal buffer, process the buffer, and return the number of messages parsed.
 int NMEAParser::parse(const char* buffer, int length)
 {
@@ -33,7 +36,94 @@ int NMEAParser::parse(const char* buffer, int length)
 
 void NMEAParser::update_gps_report()
 {
-	// Move data from NMEA-structs to SensorGps-struct
+	///// GGA
+	if (_gga.ns == 'S') {
+		_gga.lat = -_gga.lat;
+	}
+
+	if (_gga.ew == 'W') {
+		_gga.lon = -_gga.lon;
+	}
+
+	// Convert to PX4 definitions
+	switch (_gga.fix_quality) {
+	case 1:
+		// 3D fix
+		_gps_report.fix_type = 3;
+		break;
+
+	case 2:
+		// Differential
+		_gps_report.fix_type = 4;
+		break;
+
+	case 6:
+		// Dead reckoning we'll call 2D fix
+		_gps_report.fix_type = 2;
+		break;
+	}
+
+	_gps_report.longitude_deg = int(_gga.lon * 0.01) + (_gga.lon * 0.01 - int(_gga.lon * 0.01)) * 100.0 / 60.0;
+	_gps_report.latitude_deg = int(_gga.lat * 0.01) + (_gga.lat * 0.01 - int(_gga.lat * 0.01)) * 100.0 / 60.0;
+	_gps_report.hdop = _gga.hdop;
+	_gps_report.altitude_msl_m = (double)_gga.alt;
+	_gps_report.altitude_ellipsoid_m = (double)(_gga.alt + _gga.geo_sep);
+
+	// Only report sats if there's a fix
+	if (_gps_report.fix_type > 1) {
+		_gps_report.satellites_used = _gga.sats;
+
+	} else {
+		_gps_report.satellites_used = 0;
+	}
+
+	///// GST
+	_gps_report.eph = sqrtf(_gst.lat_err * _gst.lat_err + _gst.lon_err * _gst.lon_err);
+	_gps_report.epv = _gst.alt_err;
+	_gps_report.ehpe = _gst.ehpe;
+
+	///// GSA
+	_gps_report.hdop = _gsa.hdop;
+	_gps_report.vdop = _gsa.vdop;
+
+	///// RMC
+	float velocity_ms = _rmc.speed / 1.9438445f; // knots to m/s
+	float track_rad = _rmc.track_good * M_PI / 180.0f; // rad in range [0, 2pi]
+
+	_gps_report.vel_m_s = velocity_ms;
+	_gps_report.vel_n_m_s = velocity_ms * cosf(track_rad);
+	_gps_report.vel_e_m_s = velocity_ms * sinf(track_rad);
+	_gps_report.cog_rad = track_rad;
+
+	_gps_report.vel_ned_valid = _rmc.mode != 'N';
+
+	// If RMC says No Fix
+	if (_rmc.status == 'V') {
+		_gps_report.fix_type = 0;
+	}
+
+	// Calculate UTC time since epoch
+	double utc_time = _rmc.timestamp;
+	int utc_hour = static_cast<int>(utc_time / 10000);
+	int utc_minute = static_cast<int>((utc_time - utc_hour * 10000) / 100);
+	double utc_sec = static_cast<double>(utc_time - utc_hour * 10000 - utc_minute * 100);
+	int nmea_day = static_cast<int>(_rmc.date / 10000);
+	int nmea_mth = static_cast<int>((_rmc.date - nmea_day * 10000) / 100);
+	int nmea_year = static_cast<int>(_rmc.date - nmea_day * 10000 - nmea_mth * 100);
+	// convert to unix timestamp
+	struct tm timeinfo = {};
+	timeinfo.tm_year = nmea_year + 100;
+	timeinfo.tm_mon = nmea_mth - 1;
+	timeinfo.tm_mday = nmea_day;
+	timeinfo.tm_hour = utc_hour;
+	timeinfo.tm_min = utc_minute;
+	timeinfo.tm_sec = int(utc_sec);
+	timeinfo.tm_isdst = 0;
+
+	time_t epoch = mktime(&timeinfo);
+	uint64_t usecs = static_cast<uint64_t>((utc_sec - static_cast<uint64_t>(utc_sec)) * 1000000);
+	_gps_report.time_utc_usec = static_cast<uint64_t>(epoch) * 1000000ULL;
+	_gps_report.time_utc_usec += usecs;
 }
 
 // Handles a NMEA message which has already been validated.

@@ -25,6 +25,7 @@ int main()
 	setbuf(stdout, NULL); // Disable stdout buffering
 
 #if defined(LOG_RAW)
+	// Writes the raw data from serial port to a file
 	std::ofstream raw_data_file;
 	raw_data_file.open("raw.txt", std::ios::out | std::ios::trunc);
 
@@ -35,10 +36,9 @@ int main()
 
 #endif
 
-	const char* port = "/dev/ttyUSB0";
 	NMEAParser parser;
 
-	// Open the serial port
+	const char* port = "/dev/ttyUSB0";
 	int fd = open(port, O_RDWR | O_NOCTTY);
 
 	if (fd < 0) {
@@ -89,6 +89,7 @@ int main()
 	const uint16_t msg_id = writer.writeAddLoggedMessage(SensorGps::messageName());
 	writer.writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
 
+	// Setup buffer and begin read/parse/report loop
 	const int BUF_SIZE = 1024;
 	char buffer[BUF_SIZE];
 	// flush, for some reason always read two null bytes first
@@ -105,15 +106,12 @@ int main()
 		if (bytes_read > 1) {
 			int parsedCount = parser.parse(buffer, bytes_read);
 
+			// Collect data and stamp it
 			auto gps_data = parser.gps_report();
-
-			// TESTING
 			gps_data.timestamp = currentTimeUs();
-			gps_data.eph = 1.69;
-			gps_data.epv = 1.25;
 
+			// Write to ulog
 			writer.writeData(msg_id, gps_data);
-
 
 #if defined(DEBUG_BUILD)
 			PX4_INFO("Parsed %d messages", parsedCount);
