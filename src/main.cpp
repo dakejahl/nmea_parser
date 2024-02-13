@@ -103,7 +103,7 @@ int main()
 			break;
 		}
 
-		if (bytes_read > 1) {
+		if (bytes_read > 0) {
 			int parsedCount = parser.parse(buffer, bytes_read);
 
 			// Collect data and stamp it
