@@ -1,7 +1,7 @@
-#include <NMEAParser.hpp>
+#include <cstdlib>
+#include <px4_include.hpp>
 
-void NMEAParser::handle_GGA(const char* msg)
-{
+struct GGA_Data {
 	// $GPGGA,183417.000,04814.03970,N,01128.52205,E,0,00,99.0,495.53,M,47.6,M*53
 
 	// Global Positioning System Fixed data
@@ -25,33 +25,70 @@ void NMEAParser::handle_GGA(const char* msg)
 	// <checksum>
 	// <cr><lf>
 
+	float timestamp = 0.0;
+	double lat = 0.0;
+	char ns = '?';
+	double lon = 0.0;
+	char ew = '?';
+	int fix_quality = 0;
+	int sats = 0;
+	float hdop = 0.f;
+	int alt = 0;
+	char alt_val = '?';
+	int geo_sep = 0;
+	char geo_val = '?';
+
+	void print()
+	{
+		PX4_INFO("GGA");
+		PX4_INFO("timestamp: %f", timestamp);
+		PX4_INFO("lat: %f", lat);
+		PX4_INFO("ns: %c", ns);
+		PX4_INFO("lon: %f", lon);
+		PX4_INFO("ew: %c", ew);
+		PX4_INFO("fix_quality: %d", fix_quality);
+		PX4_INFO("sats: %d", sats);
+		PX4_INFO("hdop: %f", hdop);
+		PX4_INFO("alt: %d", alt);
+		PX4_INFO("alt_val: %c", alt_val);
+		PX4_INFO("geo_sep: %d", geo_sep);
+		PX4_INFO("geo_val: %c", geo_val);
+		PX4_INFO("");
+	}
+};
+
+static GGA_Data handle_GGA(const char* msg)
+{
+	GGA_Data gga = {};
 	char* endp = nullptr;
 
-	if (msg && *(++msg) != ',') { _gga.timestamp = strtod(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.timestamp = strtod(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.lat = strtod(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.lat = strtod(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.ns = *(msg++); }
+	if (msg && *(++msg) != ',') { gga.ns = *(msg++); }
 
-	if (msg && *(++msg) != ',') { _gga.lon = strtod(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.lon = strtod(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.ew = *(msg++); }
+	if (msg && *(++msg) != ',') { gga.ew = *(msg++); }
 
-	if (msg && *(++msg) != ',') { _gga.fix_quality = strtol(msg, &endp, 10); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.fix_quality = strtol(msg, &endp, 10); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.sats = strtol(msg, &endp, 10); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.sats = strtol(msg, &endp, 10); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.hdop = strtof(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.hdop = strtof(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.alt = strtol(msg, &endp, 10); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.alt = strtol(msg, &endp, 10); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.alt_val = *(msg++); }
+	if (msg && *(++msg) != ',') { gga.alt_val = *(msg++); }
 
-	if (msg && *(++msg) != ',') { _gga.geo_sep = strtol(msg, &endp, 10); msg = endp; }
+	if (msg && *(++msg) != ',') { gga.geo_sep = strtol(msg, &endp, 10); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gga.geo_val = *(msg++); }
+	if (msg && *(++msg) != ',') { gga.geo_val = *(msg++); }
 
 #if defined(DEBUG_BUILD)
-	_gga.print();
+	gga.print();
 #endif
+
+	return gga;
 }

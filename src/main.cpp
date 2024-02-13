@@ -36,8 +36,6 @@ int main()
 
 #endif
 
-	NMEAParser parser;
-
 	const char* port = "/dev/ttyUSB0";
 	int fd = open(port, O_RDWR | O_NOCTTY);
 
@@ -94,6 +92,8 @@ int main()
 	char buffer[BUF_SIZE];
 	// flush, for some reason always read two null bytes first
 	read(fd, buffer, sizeof(buffer));
+
+	NMEAParser parser;
 
 	while (!_should_exit) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));

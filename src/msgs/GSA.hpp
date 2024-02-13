@@ -1,7 +1,7 @@
-#include <NMEAParser.hpp>
+#include <cstdlib>
+#include <px4_include.hpp>
 
-void NMEAParser::handle_GSA(const char* msg)
-{
+struct GSA_Data {
 	// $GNGSA,A,3,23,03,22,09,01,19,17,06,31,11,,,1.1,0.6,0.9,1*3E
 
 	// GNSS DOP and Active Satellites. Satellites from different constellations are sent on separate messages.
@@ -21,25 +21,58 @@ void NMEAParser::handle_GSA(const char* msg)
 	// <checksum>
 	// <cr><lf>
 
+	char mode = '?';
+	int current_mode = 0;
+	int sat_prn[12] = {0};
+	float pdop = 0.f;
+	float hdop = 0.f;
+	float vdop = 0.f;
+	char system_id = '?';
+
+	void print()
+	{
+		PX4_INFO("GSA");
+		PX4_INFO("mode: %c", mode);
+		PX4_INFO("current_mode: %d", current_mode);
+
+		for (int i = 0; i < 12; i++) {
+			if (sat_prn[i] != 0) {
+				PX4_INFO("sat_prn[%d]: %d", i, sat_prn[i]);
+			}
+		}
+
+		PX4_INFO("pdop: %f", pdop);
+		PX4_INFO("hdop: %f", hdop);
+		PX4_INFO("vdop: %f", vdop);
+		PX4_INFO("system_id: %c", system_id);
+		PX4_INFO("");
+	}
+};
+
+static GSA_Data handle_GSA(const char* msg)
+{
+	GSA_Data gsa = {};
 	char* endp = nullptr;
 
-	if (msg && *(++msg) != ',') { _gsa.mode = *(msg++); }
+	if (msg && *(++msg) != ',') { gsa.mode = *(msg++); }
 
-	if (msg && *(++msg) != ',') { _gsa.current_mode = strtol(msg, &endp, 10); msg = endp; }
+	if (msg && *(++msg) != ',') { gsa.current_mode = strtol(msg, &endp, 10); msg = endp; }
 
 	for (int i = 0; i < 12; i++) {
-		if (msg && *(++msg) != ',') { _gsa.sat_prn[i] = strtol(msg, &endp, 10); msg = endp; }
+		if (msg && *(++msg) != ',') { gsa.sat_prn[i] = strtol(msg, &endp, 10); msg = endp; }
 	}
 
-	if (msg && *(++msg) != ',') { _gsa.pdop = strtof(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gsa.pdop = strtof(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gsa.hdop = strtof(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gsa.hdop = strtof(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gsa.vdop = strtof(msg, &endp); msg = endp; }
+	if (msg && *(++msg) != ',') { gsa.vdop = strtof(msg, &endp); msg = endp; }
 
-	if (msg && *(++msg) != ',') { _gsa.system_id = *(msg++); }
+	if (msg && *(++msg) != ',') { gsa.system_id = *(msg++); }
 
 #if defined(DEBUG_BUILD)
-	_gsa.print();
+	gsa.print();
 #endif
+
+	return gsa;
 }

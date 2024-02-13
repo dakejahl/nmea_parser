@@ -3,7 +3,13 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
-#include "nmea_format.hpp"
+
+#include <px4_include.hpp>
+#include <msgs/GGA.hpp>
+#include <msgs/GSA.hpp>
+#include <msgs/GST.hpp>
+#include <msgs/RMC.hpp>
+#include <msgs/VTG.hpp>
 
 class NMEAParser
 {
@@ -15,15 +21,6 @@ public:
 private:
 	// Parses an NMEA message and updates the NMEA data structures
 	void handle_nmea_message(const char* buffer, int length);
-
-	void handle_ZDA(const char* msg);
-	void handle_GGA(const char* msg);
-	void handle_RMC(const char* msg);
-	void handle_GST(const char* msg);
-	void handle_GSA(const char* msg);
-	void handle_GSV(const char* msg);
-	void handle_VTG(const char* msg);
-	void handle_GBS(const char* msg);
 
 	// Copy data from NMEA structs to SensorGps
 	void update_gps_report();
