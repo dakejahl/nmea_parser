@@ -5,10 +5,16 @@
 #include <vector>
 
 #include <ulog_cpp/simple_writer.hpp>
+#include <chrono>
+#include <memory>
+
+static uint64_t currentTimeUs() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
 #ifndef PX4_INFO
 #define PX4_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
 #endif
+
+extern std::shared_ptr<ulog_cpp::SimpleWriter> _log_writer;
 
 struct SensorGps {
 	uint64_t timestamp;

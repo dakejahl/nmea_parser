@@ -3,28 +3,6 @@
 #include <math.h>
 #include <time.h>
 
-// Append data to the internal buffer, process the buffer, and return the number of messages parsed.
-int NMEAParser::parse(const char* buffer, int length)
-{
-	if (_buffer_length + length < sizeof(_buffer)) {
-		memcpy(_buffer + _buffer_length, buffer, length);
-		_buffer_length += length;
-
-	} else {
-		PX4_INFO("buffer overflow -- clearing");
-		_buffer_length = 0;
-	}
-
-	int messages_parsed = process_buffer();
-
-	// Update the _gps_report
-	if (messages_parsed) {
-		update_gps_report();
-	}
-
-	return messages_parsed;
-}
-
 void NMEAParser::update_gps_report()
 {
 	///// GGA
@@ -117,42 +95,27 @@ void NMEAParser::update_gps_report()
 	_gps_report.time_utc_usec += usecs;
 }
 
-// Handles a NMEA message which has already been validated.
-void NMEAParser::handle_nmea_message(const char* buffer, int length)
+// Append data to the internal buffer, process the buffer, and return the number of messages parsed.
+int NMEAParser::parse(const char* buffer, int length)
 {
-	// For each message type a certain number of commas are expected
-	int comma_count = 0;
-
-	for (int i = 0 ; i < length; i++) {
-		if (buffer[i] == ',') {
-			comma_count++;
-		}
-	}
-
-	// The ID starts after the first 3 bytes ($GN)
-	// The data starts after the first 6 bytes ($GNRMC)
-
-	if ((memcmp(buffer + 3, "GGA,", 4) == 0) && (comma_count >= 14)) {
-		_gga = handle_GGA(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "RMC,", 4) == 0) && (comma_count >= 11)) {
-		_rmc = handle_RMC(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "GST,", 4) == 0) && (comma_count == 8)) {
-		_gst = handle_GST(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "GSA,", 4) == 0) && (comma_count >= 17)) {
-		_gsa = handle_GSA(buffer + 6);
-
-	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
-		_vtg = handle_VTG(buffer + 6);
+	if (_buffer_length + length < sizeof(_buffer)) {
+		memcpy(_buffer + _buffer_length, buffer, length);
+		_buffer_length += length;
 
 	} else {
-		char msg[4];
-		memcpy(msg, buffer + 3, 3);
-		msg[4] = '\0';
-		PX4_INFO("unknown message: %s", msg);
+		PX4_INFO("buffer overflow -- clearing");
+		_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, "buffer overflow -- clearing", currentTimeUs());
+		_buffer_length = 0;
 	}
+
+	int messages_parsed = process_buffer();
+
+	// Update the _gps_report
+	if (messages_parsed) {
+		update_gps_report();
+	}
+
+	return messages_parsed;
 }
 
 // Process the buffer and return the number of messages parsed.
@@ -205,6 +168,7 @@ int NMEAParser::process_buffer()
 
 		} else {
 			PX4_INFO("Invalid checksum");
+			_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, "Invalid checksum", currentTimeUs());
 			// If checksum is invalid or message incomplete, move start_pos just after this '$'
 			start_pos = (start - _buffer) + 1;
 		}
@@ -233,6 +197,45 @@ int NMEAParser::process_buffer()
 	}
 
 	return messages_parsed;
+}
+
+// Handles a NMEA message which has already been validated.
+void NMEAParser::handle_nmea_message(const char* buffer, int length)
+{
+	// For each message type a certain number of commas are expected
+	int comma_count = 0;
+
+	for (int i = 0 ; i < length; i++) {
+		if (buffer[i] == ',') {
+			comma_count++;
+		}
+	}
+
+	// The ID starts after the first 3 bytes ($GN)
+	// The data starts after the first 6 bytes ($GNRMC)
+
+	if ((memcmp(buffer + 3, "GGA,", 4) == 0) && (comma_count >= 14)) {
+		_gga = handle_GGA(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "RMC,", 4) == 0) && (comma_count >= 11)) {
+		_rmc = handle_RMC(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GST,", 4) == 0) && (comma_count == 8)) {
+		_gst = handle_GST(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "GSA,", 4) == 0) && (comma_count >= 17)) {
+		_gsa = handle_GSA(buffer + 6);
+
+	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
+		_vtg = handle_VTG(buffer + 6);
+
+	} else {
+		char msg[4];
+		memcpy(msg, buffer + 3, 3);
+		msg[4] = '\0';
+		PX4_INFO("unknown message: %s", msg);
+		_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, msg, currentTimeUs());
+	}
 }
 
 bool NMEAParser::validate_checksum(const char* nmea_message, int length)

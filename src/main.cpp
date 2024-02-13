@@ -12,11 +12,9 @@
 #include <fstream>
 #endif
 
-#include <chrono>
-
 static bool _should_exit = false;
 static void signal_handler(int signum);
-static uint64_t currentTimeUs() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+std::shared_ptr<ulog_cpp::SimpleWriter> _log_writer = nullptr;
 
 int main()
 {
@@ -78,14 +76,12 @@ int main()
 	}
 
 	// Setup ulog writer
-	ulog_cpp::SimpleWriter writer("nmea.ulg", currentTimeUs());
-	writer.writeInfo("NMEAParser", "NMEADataLogger");
-	writer.writeParameter("PARAM_A", 382.23F);
-	writer.writeParameter("PARAM_B", 8272);
-	writer.writeMessageFormat(SensorGps::messageName(), SensorGps::fields());
-	writer.headerComplete();
-	const uint16_t msg_id = writer.writeAddLoggedMessage(SensorGps::messageName());
-	writer.writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
+	_log_writer = std::make_shared<ulog_cpp::SimpleWriter>("nmea.ulg", currentTimeUs());
+	_log_writer->writeInfo("NMEAParser", "NMEADataLogger");
+	_log_writer->writeMessageFormat(SensorGps::messageName(), SensorGps::fields());
+	_log_writer->headerComplete();
+	const uint16_t msg_id = _log_writer->writeAddLoggedMessage(SensorGps::messageName());
+	_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, "Hello world", currentTimeUs());
 
 	// Setup buffer and begin read/parse/report loop
 	const int BUF_SIZE = 1024;
@@ -111,15 +107,15 @@ int main()
 			gps_data.timestamp = currentTimeUs();
 
 			// Write to ulog
-			writer.writeData(msg_id, gps_data);
+			_log_writer->writeData(msg_id, gps_data);
 
 #if defined(DEBUG_BUILD)
 			PX4_INFO("Parsed %d messages", parsedCount);
 #endif
 #if defined(LOG_RAW)
-			PX4_INFO("writing to file: %d", bytes_read);
 			raw_data_file.write(buffer, bytes_read);
 #endif
+
 		}
 	}
 
