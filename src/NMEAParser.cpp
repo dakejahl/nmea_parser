@@ -229,6 +229,9 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 	} else if ((memcmp(buffer + 3, "VTG,", 4) == 0) && (comma_count >= 8)) {
 		_vtg = handle_VTG(buffer + 6);
 
+	} else if ((memcmp(buffer + 1, "PSTM,", 5) == 0)) {
+		PX4_INFO("Got PSTM return: %s", buffer);
+
 	} else {
 		char msg[4];
 		memcpy(msg, buffer + 3, 3);
@@ -236,6 +239,27 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 		PX4_INFO("unknown message: %s", msg);
 		_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, msg, currentTimeUs());
 	}
+}
+
+void NMEAParser::send_test_command()
+{
+// Reset to defaults
+// Enable SBAS and report SBAS
+// Enables Galileo and BeiDou
+// Set baudrate to 115200
+// Set fix rate to 10Hz
+// save params
+// reset to apply
+
+// $PSTMRESTOREPAR
+// $PSTMSETPAR,1200,0x1000000C,1
+// $PSTMSETPAR,1227,0x3C0,1
+// $PSTMSETPAR,1102,0xA
+// $PSTMSETPAR,1303,0.1
+// $PSTMSAVEPAR
+// $PSTMSRR
+
+
 }
 
 bool NMEAParser::validate_checksum(const char* nmea_message, int length)

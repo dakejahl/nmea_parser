@@ -91,6 +91,10 @@ int main()
 
 	NMEAParser parser;
 
+	// Send configuration commands
+
+	parser.send_test_command();
+
 	while (!_should_exit) {
 		int bytes_read = read(fd, buffer, sizeof(buffer));
 

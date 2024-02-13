@@ -18,6 +18,8 @@ public:
 
 	SensorGps gps_report() { return _gps_report; };
 
+	void send_test_command();
+
 private:
 	// Parses an NMEA message and updates the NMEA data structures
 	void handle_nmea_message(const char* buffer, int length);
