@@ -232,10 +232,11 @@ void NMEAParser::handle_nmea_message(const char* buffer, int length)
 	} else if ((memcmp(buffer + 1, "PSTM,", 5) == 0)) {
 		PX4_INFO("Got PSTM return: %s", buffer);
 
+		// TODO: GSV, GBS
 	} else {
 		char msg[4];
 		memcpy(msg, buffer + 3, 3);
-		msg[4] = '\0';
+		msg[3] = '\0';
 		PX4_INFO("unknown message: %s", msg);
 		_log_writer->writeTextMessage(ulog_cpp::Logging::Level::Info, msg, currentTimeUs());
 	}
